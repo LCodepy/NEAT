@@ -4,7 +4,7 @@ import pygame
 
 from events import EventHandler
 from label import Label
-from neat import NodeFactory, ConnectionFactory, GenomeFactory, Individual, NeuralNetwork, Genome, Population
+from neat2 import NodeFactory, ConnectionFactory, GenomeFactory, Individual, NeuralNetwork, Genome, Population
 
 
 class Renderer:
@@ -55,7 +55,10 @@ class Renderer:
 
         x_dist = self.W // len(layers)
 
-        node_coordinates = {node.id: (0, 0) for node in self.genome.node_genes}
+        if isinstance(self.genome.node_genes, list):
+            node_coordinates = {node.id: (0, 0) for node in self.genome.node_genes}
+        else:
+            node_coordinates = {node.id: (0, 0) for node in self.genome.node_genes.values()}
 
         for i, layer in enumerate(layers):
             x = self.W // 2 - (len(layers) * x_dist - x_dist) // 2 + i * x_dist
@@ -71,7 +74,12 @@ class Renderer:
             font_size = 14
         elif min(self.W, self.H) < 500:
             font_size = 12
-        for connection in self.genome.connection_genes:
+
+        connection_genes = self.genome.connection_genes
+        if isinstance(connection_genes, dict):
+            connection_genes = connection_genes.values()
+
+        for connection in connection_genes:
             input_node = connection.input_node
             output_node = connection.output_node
 

@@ -10,7 +10,7 @@ gen = 0
 for p in population.run():
     best = sorted([y for s in p for y in s.individuals], key=lambda x: x.fitness)[-1]
     gen += 1
-    if gen >= 200:
+    if gen >= 400:
         break
     print(best.fitness)
 

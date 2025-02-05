@@ -4,7 +4,8 @@ import pygame
 
 from events import EventHandler
 from label import Label
-from neat2 import NodeFactory, ConnectionFactory, GenomeFactory, Individual, NeuralNetwork, Genome, Population
+# from neat2 import NodeFactory, ConnectionFactory, GenomeFactory, Individual, NeuralNetwork, Genome, Population
+from neat import *
 
 
 class Renderer:

@@ -492,8 +492,14 @@ class Species:
     def add(self, individual: Individual):
         self.individuals.append(individual)
 
-    def roulette_wheel_selection(self, survival_threshold):
+    def roulette_wheel_selection(self, survival_threshold: float, exclude: Individual = None):
         survivals = sorted(self.individuals, key=lambda i: i.fitness)[int((1 - survival_threshold) * self.get_size()):]
+
+        if exclude in survivals:
+            survivals.remove(exclude)
+
+        if not survivals:
+            return exclude
 
         value = random.random() * sum(map(lambda i: i.fitness, survivals))
         fitness_roulette = [survivals[0].fitness]
@@ -640,7 +646,8 @@ class Population:
                     break
 
                 parent1 = species.roulette_wheel_selection(self.survival_threshold)
-                parent2 = species.roulette_wheel_selection(self.survival_threshold)
+                parent2 = species.roulette_wheel_selection(self.survival_threshold, exclude=parent1)
+
                 if parent1.fitness > parent2.fitness:
                     offspring = parent1.crossover(self.genome_factory, parent2)
                 else:

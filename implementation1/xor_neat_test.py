@@ -1,7 +1,7 @@
 import time
 
-from neat import Population, NeuralNetwork
-from testing import Renderer
+from implementation1.neat import Population, NeuralNetwork
+from implementation1.testing import Renderer
 
 t1 = time.perf_counter()
 

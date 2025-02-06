@@ -4,8 +4,8 @@ import pickle
 
 from events import EventHandler
 from label import Label
-from neat import Population
-from testing import Renderer
+from implementation1.neat import Population
+from implementation1.testing import Renderer
 
 
 class Main:

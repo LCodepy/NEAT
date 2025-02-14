@@ -17,5 +17,6 @@ class ConnectionFactory:
             self.global_innovation_number += 1
             innovation_number = self.global_innovation_number
 
-        self.generation_mutations.append((input_node, output_node, innovation_number))
+            self.generation_mutations.append((input_node, output_node, innovation_number))
+
         return ConnectionGene(input_node, output_node, weight, True, innovation_number)

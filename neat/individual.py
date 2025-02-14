@@ -27,15 +27,14 @@ class Individual:
                 offspring.add_node(self.crossover_nodes(dominant_node, recessive_node))
 
         for dominant_connection in self.genome.connection_genes.values():
-            connection_innov = dominant_connection.innovation_number
-            recessive_connection = individual.genome.get_connection(connection_innov)
+            connection_innovation = dominant_connection.innovation_number
+            recessive_connection = individual.genome.get_connection(connection_innovation)
             if not recessive_connection:
                 offspring.add_connection(dominant_connection.copy())
             else:
                 offspring.add_connection(self.crossover_connection(dominant_connection, recessive_connection))
 
         return offspring
-
 
     @staticmethod
     def crossover_nodes(node1: NodeGene, node2: NodeGene):

@@ -18,6 +18,8 @@ class NodeFactory:
             self.global_innovation_number += 1
             innovation_number = self.global_innovation_number
 
-        self.generation_mutations.append(
-            (conn_to_split.input_node, conn_to_split.output_node, innovation_number))
+            self.generation_mutations.append(
+                (conn_to_split.input_node, conn_to_split.output_node, innovation_number)
+            )
+
         return NodeGene(innovation_number, type_, bias, activation)

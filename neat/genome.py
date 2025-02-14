@@ -22,8 +22,8 @@ class Genome:
         self.connection_factory = connection_factory
         self.node_factory = node_factory
 
-        self.max_bias_weight_value = 20
-        self.min_bias_weight_value = -20
+        self.max_bias_weight_value = 10
+        self.min_bias_weight_value = -10
 
         self.node_input_genes = [NodeGene(i + 1, NodeType.INPUT_NODE, 0, sigmoid)
                                  for i in range(self.num_inputs)]
@@ -36,7 +36,9 @@ class Genome:
         self.node_genes = {node.id: node for node in self.node_input_genes + self.node_output_genes}
 
         self.connection_genes = {
-            j * self.num_outputs + i: ConnectionGene(g_in.id, g_out.id, random.random() * 2 - 1, True, j * self.num_outputs + i)
+            j * self.num_outputs + i: ConnectionGene(
+                g_in.id, g_out.id, random.random() * 2 - 1, True, j * self.num_outputs + i
+            )
             for j, g_in in enumerate(self.node_input_genes)
             for i, g_out in enumerate(self.node_output_genes)
         }
@@ -51,7 +53,7 @@ class Genome:
         if not self.connection_genes:
             return
         connection = random.choice(list(self.connection_genes.values()))
-        connection.weight = self.clamp(random_normal_distribution(0, 1))
+        connection.weight = self.clamp(random_normal_distribution(0, 1.2))
 
     def mutate_change_bias(self):
         node = random.choice(self.get_hidden_neurons() + self.get_output_neurons())
@@ -59,7 +61,7 @@ class Genome:
 
     def mutate_assign_new_bias(self):
         node = random.choice(self.get_hidden_neurons() + self.get_output_neurons())
-        node.bias = self.clamp(random_normal_distribution(0, 1))
+        node.bias = self.clamp(random_normal_distribution(0, 1.2))
 
     def mutate_change_enabled(self):
         disabled = [c for c in self.connection_genes.values() if not c.enabled]
@@ -109,15 +111,20 @@ class Genome:
                     (connection.input_node == connection_to_split.input_node and connection.output_node == node.id) or
                     (connection.input_node == node.id and connection.output_node == connection_to_split.output_node)
             ):
+                connection_to_split.enabled = True
                 return
 
         if self.creates_cycle(connection_to_split.input_node, node.id) or self.creates_cycle(node.id, connection_to_split.output_node):
+            connection_to_split.enabled = True
             return
 
         self.add_node(node)
         self.add_connection(self.connection_factory.create_connection(connection_to_split.input_node, node.id, 1.0))
-        self.add_connection(self.connection_factory.create_connection(node.id, connection_to_split.output_node,
-                                                                 connection_to_split.weight))
+        self.add_connection(
+            self.connection_factory.create_connection(
+                node.id, connection_to_split.output_node, connection_to_split.weight
+            )
+        )
         return True
 
     def mutate_remove_node(self):
@@ -193,6 +200,21 @@ class Genome:
         print("CONNECTIONS: ", ", ".join(
             [f"{c.input_node}->{c.output_node} ({c.innovation_number})" + (" (D)" if not c.enabled else "") for c in
              self.connection_genes.values()]))
+
+    def show_innovation_history(self):
+        print(f"\nGenome {self.id}")
+        print("Connection innovations:")
+        for i in range(self.connection_factory.global_innovation_number):
+            print(f"{i:8d} |", end=" ")
+        print("\n" + "-" * self.connection_factory.global_innovation_number * 11)
+        for i in range(self.connection_factory.global_innovation_number):
+            if i in self.connection_genes:
+                if self.connection_genes[i].enabled:
+                    print(f"{self.connection_genes[i].input_node:3d}->{self.connection_genes[i].output_node:3d} |", end=" ")
+                else:
+                    print(f"{self.connection_genes[i].input_node:3d}x>{self.connection_genes[i].output_node:3d} |", end=" ")
+
+        print()
 
     def __repr__(self):
         return f"Genome(id={self.id})"

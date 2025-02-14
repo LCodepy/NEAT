@@ -16,8 +16,11 @@ from events import EventHandler
 from label import Label
 
 
-def sigmoid(x: float, k: float = 1, l: float = 0) -> float:
-    return 1 / (1 + math.exp(-x * k + l))
+def sigmoid(x: float, k: float = 10, l: float = 0) -> float:
+    try:
+        return 1 / (1 + math.exp(-x * k + l))
+    except OverflowError:
+        return 0
 
 
 def random_normal_distribution(mean: float, standard_deviation: float):
@@ -60,15 +63,16 @@ class Genome:
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
 
-        self.max_bias_weight_value = 20
-        self.min_bias_weight_value = -20
+        self.max_bias_weight_value = 10
+        self.min_bias_weight_value = -10
 
         self.node_input_genes = [NodeGene(i + 1, NodeType.INPUT_NODE, 0, sigmoid)
                                  for i in range(self.num_inputs)]
 
         self.node_output_genes = [
             NodeGene(i + 1 + self.num_inputs, NodeType.OUTPUT_NODE, random.random() * 2 - 1, sigmoid)
-            for i in range(self.num_outputs)]
+            for i in range(self.num_outputs)
+        ]
 
         self.node_genes = self.node_input_genes + self.node_output_genes
 
@@ -88,7 +92,7 @@ class Genome:
         if not self.connection_genes:
             return
         connection = random.choice(self.connection_genes)
-        connection.weight = self.clamp(random_normal_distribution(0, 1))
+        connection.weight = self.clamp(random_normal_distribution(0, 1.2))
 
     def mutate_change_bias(self):
         node = random.choice(self.get_hidden_neurons() + self.get_output_neurons())
@@ -96,7 +100,7 @@ class Genome:
 
     def mutate_assign_new_bias(self):
         node = random.choice(self.get_hidden_neurons() + self.get_output_neurons())
-        node.bias = self.clamp(random_normal_distribution(0, 1))
+        node.bias = self.clamp(random_normal_distribution(0, 1.2))
 
     def mutate_change_enabled(self):
         disabled = [c for c in self.connection_genes if not c.enabled]
@@ -146,9 +150,11 @@ class Genome:
                     (connection.input_node == connection_to_split.input_node and connection.output_node == node.id) or
                     (connection.input_node == node.id and connection.output_node == connection_to_split.output_node)
             ):
+                connection_to_split.enabled = True
                 return
 
         if self.creates_cycle(connection_to_split.input_node, node.id) or self.creates_cycle(node.id, connection_to_split.output_node):
+            connection_to_split.enabled = True
             return
 
         self.add_node(node)
@@ -509,6 +515,7 @@ class Species:
         for i in range(len(survivals)):
             if fitness_roulette[i] > value:
                 return survivals[i]
+        return survivals[-1]
 
     def get_size(self):
         return len(self.individuals)
@@ -533,14 +540,14 @@ class Population:
         self.species: list[Species] = []
         self.current_species = 0
 
-        self.species_size_target = 5
+        self.species_size_target = 8
         self.species_target_step_size = 0.1
 
         self.excess_genes_importance = 1.0
         self.disjoint_genes_importance = 1.0
         self.weight_difference_importance = 0.4
 
-        self.compatibility_threshold = 1
+        self.compatibility_threshold = 3
 
         self.survival_threshold = 0.2
 
@@ -551,7 +558,7 @@ class Population:
         while True:
             #for i in range(self.generations):
             # os.system("cls")
-            print(f"----------------------GENERATION {generation}--------------------------")
+            # print(f"----------------------GENERATION {generation}--------------------------")
             self.speciate_genomes()
             self.evaluate()
             if generation == self.generations-1 or sorted([y for s in self.species for y in s.individuals], key=lambda x: x.fitness)[-1].fitness > 3.8:
@@ -629,7 +636,8 @@ class Population:
                 #     out3 = 1
                 # if out4 < 0.3:
                 #     out4 = 0
-                fitness = 1-out1 + out2 + out3 + 1-out4
+                fitness = (1-out1) + out2 + out3 + (1-out4)
+                # fitness = 1 - (abs(0 - out1) + abs(1 - out2) + abs(1 - out3) + abs(0 - out4)) / 4
                 individual.fitness = fitness
 
     def crossover_genomes(self):
@@ -683,17 +691,17 @@ class Population:
                         genome.mutate_change_bias()
                     else:
                         genome.mutate_assign_new_bias()
-                if random.random() > 0.8:
+                if random.random() > 0.6:
                     for _ in range(20):
                         if genome.mutate_add_connection(self.connection_factory):
                             break
-                if random.random() > 0.9:
+                if random.random() > 0.92:
                     genome.mutate_add_node(self.node_factory, self.connection_factory)
-                if random.random() > 0.9:
+                if random.random() > 0.75:
                     genome.mutate_change_enabled()
-                if random.random() > 0.9:
+                if random.random() > 0.90:
                     genome.mutate_remove_node()
-                if random.random() > 0.8:
+                if random.random() > 0.92:
                     genome.mutate_remove_connection()
 
     def apply_explicit_fitness_sharing(self):
@@ -736,7 +744,8 @@ class Population:
         for innov in innovations1:
             if innov in innovations2:
                 average_weight_distance += abs(
-                    genome1.get_connection(innov).weight - genome2.get_connection(innov).weight)
+                    genome1.get_connection(innov).weight - genome2.get_connection(innov).weight
+                )
                 matching_genes_count += 1
             else:
                 if innovations2 and innov > max(innovations2):
@@ -747,7 +756,8 @@ class Population:
         for innov in innovations2:
             if innov in innovations1:
                 average_weight_distance += abs(
-                    genome1.get_connection(innov).weight - genome2.get_connection(innov).weight)
+                    genome1.get_connection(innov).weight - genome2.get_connection(innov).weight
+                )
                 matching_genes_count += 1
             else:
                 if innovations1 and innov > max(innovations1):
@@ -768,25 +778,25 @@ class Population:
                        self.disjoint_genes_importance * disjoint_genes / larger_genome_size + \
                        self.weight_difference_importance * average_weight_distance
 
-        # !!!TEST!!!
-
-        innov1 = []
-        for node in genome1.node_genes:
-            innov1.append(node.id)
-
-        innov2 = []
-        for node in genome2.node_genes:
-            innov2.append(node.id)
-
-        same = list(set(innov1).intersection(set(innov2)))
-
-        bias_distance = 0
-
-        for node in same:
-            bias_distance += abs(genome1.get_node(node).bias - genome2.get_node(node).bias)
-
-        # genome_delta += 0.4 * bias_distance / len(same)
-
-        # !!!TEST!!!
+        # # !!!TEST!!!
+        #
+        # innov1 = []
+        # for node in genome1.node_genes:
+        #     innov1.append(node.id)
+        #
+        # innov2 = []
+        # for node in genome2.node_genes:
+        #     innov2.append(node.id)
+        #
+        # same = list(set(innov1).intersection(set(innov2)))
+        #
+        # bias_distance = 0
+        #
+        # for node in same:
+        #     bias_distance += abs(genome1.get_node(node).bias - genome2.get_node(node).bias)
+        #
+        # # genome_delta += 0.4 * bias_distance / len(same)
+        #
+        # # !!!TEST!!!
 
         return genome_delta

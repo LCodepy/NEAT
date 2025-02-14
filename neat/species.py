@@ -57,6 +57,7 @@ class Species:
         for i in range(len(survivals)):
             if fitness_roulette[i] > value:
                 return survivals[i]
+        return survivals[-1]
 
     def get_size(self):
         return len(self.individuals)

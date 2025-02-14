@@ -75,7 +75,7 @@ class NeuralNetwork:
         graph = {node.id: set() for node in genome.node_genes.values() if node.type is not NodeType.OUTPUT_NODE}
 
         for conn in genome.connection_genes.values():
-            if genome.get_node(conn.output_node).type is not NodeType.OUTPUT_NODE:
+            if genome.get_node(conn.output_node).type is not NodeType.OUTPUT_NODE and conn.enabled:
                 graph[conn.output_node].add(conn.input_node)
 
         layers = []

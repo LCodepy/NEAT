@@ -25,14 +25,14 @@ class Population:
         self.species: list[Species] = []
         self.current_species = 0
 
-        self.species_size_target = 5
+        self.species_size_target = 8
         self.species_target_step_size = 0.1
 
         self.excess_genes_importance = 1.0
         self.disjoint_genes_importance = 1.0
         self.weight_difference_importance = 0.4
 
-        self.compatibility_threshold = 1
+        self.compatibility_threshold = 3
 
         self.survival_threshold = 0.2
 
@@ -44,9 +44,9 @@ class Population:
             print(f"\n----------------------GENERATION {generation}--------------------------")
             self.speciate_genomes()
             self.evaluate()
-            if generation == self.generations-1 or sorted([y for s in self.species for y in s.individuals], key=lambda x: x.fitness)[-1].fitness > 3.9:
-                return sorted([y for s in self.species for y in s.individuals], key=lambda x: x.fitness)
-            print("Best: ", sorted([y for s in self.species for y in s.individuals], key=lambda x: x.fitness)[-1])
+            if generation == self.generations-1 or self.get_sorted_individuals()[-1].fitness > 3.9:
+                return self.get_sorted_individuals()
+            print("Best: ", self.get_sorted_individuals()[-1])
             self.crossover_genomes()
             self.mutate_genomes()
 
@@ -106,6 +106,7 @@ class Population:
     def evaluate(self):
         for species in self.species:
             for individual in species.individuals:
+                # individual.genome.show_innovation_history()
                 nn = NeuralNetwork(individual.genome)
 
                 out1 = nn.forward([0, 0])[0]
@@ -142,6 +143,10 @@ class Population:
 
                 current_offspring += 1
 
+        for i in range(self.size):
+            if not genomes[i]:
+                genomes[i] = self.genome_factory.create_genome(self.num_inputs, self.num_outputs)
+
         to_remove = []
         for species in self.species:
             if species.allowed_offspring == 0:
@@ -167,17 +172,17 @@ class Population:
                         genome.mutate_change_bias()
                     else:
                         genome.mutate_assign_new_bias()
-                if random.random() > 0.8:
+                if random.random() > 0.6:
                     for _ in range(20):
                         if genome.mutate_add_connection():
                             break
-                if random.random() > 0.9:
+                if random.random() > 0.92:
                     genome.mutate_add_node()
-                if random.random() > 0.9:
+                if random.random() > 0.75:
                     genome.mutate_change_enabled()
-                if random.random() > 0.9:
+                if random.random() > 0.90:
                     genome.mutate_remove_node()
-                if random.random() > 0.8:
+                if random.random() > 0.92:
                     genome.mutate_remove_connection()
 
     def apply_explicit_fitness_sharing(self):
@@ -254,23 +259,26 @@ class Population:
 
         # !!!TEST!!!
 
-        innov1 = []
-        for node in genome1.node_genes.values():
-            innov1.append(node.id)
-
-        innov2 = []
-        for node in genome2.node_genes.values():
-            innov2.append(node.id)
-
-        same = list(set(innov1).intersection(set(innov2)))
-
-        bias_distance = 0
-
-        for node in same:
-            bias_distance += abs(genome1.get_node(node).bias - genome2.get_node(node).bias)
+        # innov1 = []
+        # for node in genome1.node_genes.values():
+        #     innov1.append(node.id)
+        #
+        # innov2 = []
+        # for node in genome2.node_genes.values():
+        #     innov2.append(node.id)
+        #
+        # same = list(set(innov1).intersection(set(innov2)))
+        #
+        # bias_distance = 0
+        #
+        # for node in same:
+        #     bias_distance += abs(genome1.get_node(node).bias - genome2.get_node(node).bias)
 
         # genome_delta += 0.4 * bias_distance / len(same)
 
         # !!!TEST!!!
 
         return genome_delta
+
+    def get_sorted_individuals(self) -> list[Individual]:
+        return sorted([y for s in self.species for y in s.individuals], key=lambda x: x.fitness)

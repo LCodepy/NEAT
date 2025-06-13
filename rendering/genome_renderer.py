@@ -4,6 +4,7 @@ import random
 import pygame
 import pygame.gfxdraw
 
+from neat.config import Config
 from neat.connection_factory import ConnectionFactory
 from neat.genome import Genome
 from neat.neural_network import NeuralNetwork
@@ -140,6 +141,6 @@ class GenomeRenderer:
 
 
 if __name__ == "__main__":
-    genome = Genome(0, 2, 1, ConnectionFactory(2), NodeFactory(4))
+    genome = Genome(0, 2, 1, ConnectionFactory(2), NodeFactory(4), Config())
     renderer = GenomeRenderer(genome, 600, 600)
     renderer.run()

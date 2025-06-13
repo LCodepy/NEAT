@@ -1,5 +1,7 @@
 import random
+from typing import Optional
 
+from neat.config import Config
 from neat.connection_factory import ConnectionFactory
 from neat.genome import Genome
 from neat.genome_factory import GenomeFactory
@@ -11,40 +13,30 @@ from neat.species import Species
 
 class Population:
 
-    def __init__(self, size: int, num_inputs: int, num_outputs: int, generations: int):
+    def __init__(self, size: int, num_inputs: int, num_outputs: int, generations: int, config: Config):
         self.size = size
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
         self.generations = generations
+        self.config = config
 
         self.node_factory = NodeFactory(num_inputs + num_outputs)
-        self.connection_factory = ConnectionFactory(num_inputs * num_outputs - 0)
-        self.genome_factory = GenomeFactory(self.connection_factory, self.node_factory)
+        self.connection_factory = ConnectionFactory(num_inputs * num_outputs)
+        self.genome_factory = GenomeFactory(self.connection_factory, self.node_factory, self.config)
 
         self.genomes = [self.genome_factory.create_genome(num_inputs, num_outputs) for _ in range(self.size)]
         self.species: list[Species] = []
         self.current_species = 0
 
-        self.species_size_target = 8
-        self.species_target_step_size = 0.1
+        self.compatibility_threshold = self.config.compatibility_threshold
 
-        self.excess_genes_importance = 1.0
-        self.disjoint_genes_importance = 1.0
-        self.weight_difference_importance = 0.4
-
-        self.compatibility_threshold = 3
-
-        self.survival_threshold = 0.2
-
-        self.max_allowed_generations_since_improved = 20
-
-    def run(self):
+    def run(self) -> list[Individual]:
         generation = 0
         while True:
             print(f"\n----------------------GENERATION {generation}--------------------------")
             self.speciate_genomes()
             self.evaluate()
-            if generation == self.generations-1 or self.get_sorted_individuals()[-1].fitness > 3.9:
+            if generation == self.generations - 1 or self.get_sorted_individuals()[-1].fitness > 3.9:
                 return self.get_sorted_individuals()
             print("Best: ", self.get_sorted_individuals()[-1])
             self.crossover_genomes()
@@ -52,7 +44,7 @@ class Population:
 
             generation += 1
 
-    def speciate_genomes(self):
+    def speciate_genomes(self) -> None:
         genomes = [genome for genome in self.genomes]
 
         if self.species:
@@ -71,13 +63,13 @@ class Population:
                         representative[0].add(Individual(genome, 0))
                         break
                 else:
-                    self.species.append(Species(self.current_species, [Individual(genome, 0)]))
+                    self.species.append(Species(self.current_species, [Individual(genome, 0)], self.config))
                     representatives.append((self.species[-1], genome))
                     self.current_species += 1
         else:
             idx = random.randint(0, len(genomes) - 1)
             representative = genomes.pop(idx)
-            self.species.append(Species(0, [Individual(representative, 0)]))
+            self.species.append(Species(0, [Individual(representative, 0)], self.config))
             self.current_species += 1
 
             for genome in genomes:
@@ -87,7 +79,7 @@ class Population:
                         species.add(Individual(genome, 0))
                         break
                 else:
-                    self.species.append(Species(self.current_species, [Individual(genome, 0)]))
+                    self.species.append(Species(self.current_species, [Individual(genome, 0)], self.config))
                     self.current_species += 1
 
         to_remove = []
@@ -98,12 +90,12 @@ class Population:
         for species in to_remove:
             self.species.remove(species)
 
-        if len(self.species) < self.species_size_target:
-            self.compatibility_threshold -= self.species_target_step_size
-        elif len(self.species) > self.species_size_target:
-            self.compatibility_threshold += self.species_target_step_size
+        if len(self.species) < self.config.species_target_size:
+            self.compatibility_threshold -= self.config.species_target_step_size
+        elif len(self.species) > self.config.species_target_size:
+            self.compatibility_threshold += self.config.species_target_step_size
 
-    def evaluate(self):
+    def evaluate(self) -> None:
         for species in self.species:
             for individual in species.individuals:
                 # individual.genome.show_innovation_history()
@@ -114,14 +106,14 @@ class Population:
                 out3 = nn.forward([1, 0])[0]
                 out4 = nn.forward([1, 1])[0]
 
-                fitness = 1-out1 + out2 + out3 + 1-out4
+                fitness = 1 - out1 + out2 + out3 + 1 - out4
                 individual.fitness = fitness
 
-    def crossover_genomes(self):
+    def crossover_genomes(self) -> None:
         self.apply_explicit_fitness_sharing()
         self.calculate_allowed_offspring()
 
-        genomes = [None for _ in range(self.size)]
+        genomes: list[Optional[Genome]] = [None for _ in range(self.size)]
 
         current_offspring = 0
         for species in self.species:
@@ -130,8 +122,8 @@ class Population:
                 if current_offspring >= self.size:
                     break
 
-                parent1 = species.roulette_wheel_selection(self.survival_threshold)
-                parent2 = species.roulette_wheel_selection(self.survival_threshold, exclude=parent1)
+                parent1 = species.roulette_wheel_selection(self.config.survival_threshold)
+                parent2 = species.roulette_wheel_selection(self.config.survival_threshold, exclude=parent1)
 
                 if parent1.fitness > parent2.fitness:
                     offspring = parent1.crossover(self.genome_factory, parent2)
@@ -157,56 +149,56 @@ class Population:
 
         self.genomes = genomes
 
-    def mutate_genomes(self):
+    def mutate_genomes(self) -> None:
         for species in self.species:
             for individual in species.offspring:
                 genome = individual.genome
 
-                if random.random() > 0.2:
-                    if random.random() > 0.1:
+                if random.random() > 1 - self.config.weight_mutation_chance:
+                    if random.random() > 1 - self.config.change_weight_mutation_chance:
                         genome.mutate_change_weight()
                     else:
                         genome.mutate_assign_new_weight()
-                if random.random() > 0.2:
-                    if random.random() > 0.1:
+                if random.random() > 1 - self.config.bias_mutation_chance:
+                    if random.random() > 1 - self.config.change_bias_mutation_chance:
                         genome.mutate_change_bias()
                     else:
                         genome.mutate_assign_new_bias()
-                if random.random() > 0.6:
+                if random.random() > 1 - self.config.add_connection_mutation_chance:
                     for _ in range(20):
                         if genome.mutate_add_connection():
                             break
-                if random.random() > 0.92:
+                if random.random() > 1 - self.config.add_node_mutation_chance:
                     genome.mutate_add_node()
-                if random.random() > 0.75:
+                if random.random() > 1 - self.config.enable_mutation_chance:
                     genome.mutate_change_enabled()
-                if random.random() > 0.90:
+                if random.random() > 1 - self.config.remove_node_mutation_chance:
                     genome.mutate_remove_node()
-                if random.random() > 0.92:
+                if random.random() > 1 - self.config.remove_connection_mutation_chance:
                     genome.mutate_remove_connection()
 
-    def apply_explicit_fitness_sharing(self):
+    def apply_explicit_fitness_sharing(self) -> None:
         for species in self.species:
             species.calculate_adjusted_fitness()
             species.calculate_averages()
 
-    def calculate_allowed_offspring(self):
+    def calculate_allowed_offspring(self) -> None:
         for species in self.species:
             species.calculate_generation_since_improved()
 
         global_avg_fitness = 0
         genomes_num = 0
         for species in self.species:
-            if species.generations_since_improved < self.max_allowed_generations_since_improved:
+            if species.generations_since_improved < self.config.max_allowed_generations_since_improved:
                 genomes_num += species.get_size()
                 global_avg_fitness += species.fitness_sum
 
         global_avg_fitness /= genomes_num
 
         for species in self.species:
-            species.calculate_allowed_offspring(global_avg_fitness, self.max_allowed_generations_since_improved)
+            species.calculate_allowed_offspring(global_avg_fitness, self.config.max_allowed_generations_since_improved)
 
-    def calculate_genome_distance(self, genome1: Genome, genome2: Genome):
+    def calculate_genome_distance(self, genome1: Genome, genome2: Genome) -> float:
         excess_genes = 0
         disjoint_genes = 0
 
@@ -253,9 +245,11 @@ class Population:
         if larger_genome_size == 0:
             larger_genome_size = 1
 
-        genome_delta = self.excess_genes_importance * excess_genes / larger_genome_size + \
-                       self.disjoint_genes_importance * disjoint_genes / larger_genome_size + \
-                       self.weight_difference_importance * average_weight_distance
+        genome_delta = (
+                self.config.excess_genes_importance * excess_genes / larger_genome_size +
+                self.config.disjoint_genes_importance * disjoint_genes / larger_genome_size +
+                self.config.weight_difference_importance * average_weight_distance
+        )
 
         # !!!TEST!!!
 

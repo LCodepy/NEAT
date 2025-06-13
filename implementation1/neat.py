@@ -558,7 +558,7 @@ class Population:
         while True:
             #for i in range(self.generations):
             # os.system("cls")
-            # print(f"----------------------GENERATION {generation}--------------------------")
+            print(f"----------------------GENERATION {generation}--------------------------")
             self.speciate_genomes()
             self.evaluate()
             if generation == self.generations-1 or sorted([y for s in self.species for y in s.individuals], key=lambda x: x.fitness)[-1].fitness > 3.8:

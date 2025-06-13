@@ -37,14 +37,14 @@ class Individual:
         return offspring
 
     @staticmethod
-    def crossover_nodes(node1: NodeGene, node2: NodeGene):
+    def crossover_nodes(node1: NodeGene, node2: NodeGene) -> NodeGene:
         bias = random.choice([node1.bias, node2.bias])
         activation = random.choice([node1.activation, node2.activation])
 
         return NodeGene(node1.id, node1.type, bias, activation)
 
     @staticmethod
-    def crossover_connection(connection1: ConnectionGene, connection2: ConnectionGene):
+    def crossover_connection(connection1: ConnectionGene, connection2: ConnectionGene) -> ConnectionGene:
         weight = random.choice([connection1.weight, connection2.weight])
         enabled = True  # random.choice([connection1.enabled, connection2.enabled])
         if not connection1.enabled or not connection2.enabled:

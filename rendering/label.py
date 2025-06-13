@@ -2,7 +2,7 @@ from typing import Tuple, Union
 
 import pygame
 
-from event_handler import EventHandler
+from rendering.event_handler import EventHandler
 
 pygame.font.init()
 

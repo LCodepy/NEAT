@@ -21,19 +21,15 @@ class Connection:
 
 class NeuralNetwork:
 
-    def __init__(self, genome: Genome):
+    def __init__(self, genome: Genome) -> None:
         self.genome = genome
 
-        self.neuron_inputs = {}
-        self.neuron_outputs = {}
-
         self.neurons = []
-        self.hidden_neurons = []
         self.connections = []
 
         self.create_neural_network()
 
-    def create_neural_network(self):
+    def create_neural_network(self) -> None:
         nodes = self.genome.node_genes
         connections = self.genome.connection_genes
 
@@ -41,7 +37,7 @@ class NeuralNetwork:
         self.connections = [Connection(conn.input_node, conn.output_node, conn.weight) for conn in connections.values() if
                             conn.enabled]
 
-    def forward(self, inputs):
+    def forward(self, inputs: list[float]) -> list[float]:
         assert len(inputs) == self.genome.num_inputs, "Number of inputs must be the same"
 
         activations = {neuron.id: 0 for neuron in self.neurons}
@@ -71,7 +67,7 @@ class NeuralNetwork:
                 return neuron
 
     @staticmethod
-    def calculate_network_layers(genome):
+    def calculate_network_layers(genome: Genome) -> list[list[int]]:
         graph = {node.id: set() for node in genome.node_genes.values() if node.type is not NodeType.OUTPUT_NODE}
 
         for conn in genome.connection_genes.values():

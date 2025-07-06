@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Callable
 
-from neat.genome import Genome
-from neat.node import NodeType
+from implementation2.neat.genome import Genome
+from implementation2.neat.node import NodeType
 
 
 @dataclass

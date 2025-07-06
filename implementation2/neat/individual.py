@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import random
 
-from neat.connection import ConnectionGene
-from neat.genome import Genome
-from neat.genome_factory import GenomeFactory
-from neat.node import NodeGene
+from implementation2.neat.connection import ConnectionGene
+from implementation2.neat.genome import Genome
+from implementation2.neat.genome_factory import GenomeFactory
+from implementation2.neat.node import NodeGene
 
 
 class Individual:

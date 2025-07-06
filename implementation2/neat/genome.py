@@ -2,12 +2,12 @@ import random
 
 import numpy as np
 
-from neat.activation_functions import sigmoid
-from neat.config import Config
-from neat.connection import ConnectionGene
-from neat.connection_factory import ConnectionFactory
-from neat.node import NodeGene, NodeType
-from neat.node_factory import NodeFactory
+from implementation2.neat.activation_functions import sigmoid
+from implementation2.neat.neatconfig import NEATConfig
+from implementation2.neat.connection import ConnectionGene
+from implementation2.neat.connection_factory import ConnectionFactory
+from implementation2.neat.node import NodeGene, NodeType
+from implementation2.neat.node_factory import NodeFactory
 
 
 def random_normal_distribution(mean: float, standard_deviation: float):
@@ -21,7 +21,7 @@ def random_number_in_bound(low: float = -1, high: float = 1):
 class Genome:
 
     def __init__(self, id_: int, num_inputs: int, num_outputs: int, connection_factory: ConnectionFactory,
-                 node_factory: NodeFactory, config: Config) -> None:
+                 node_factory: NodeFactory, config: NEATConfig) -> None:
         self.id = id_
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs

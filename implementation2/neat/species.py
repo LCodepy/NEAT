@@ -1,12 +1,12 @@
 import random
 
-from neat.config import Config
-from neat.individual import Individual
+from implementation2.neat.neatconfig import NEATConfig
+from implementation2.neat.individual import Individual
 
 
 class Species:
 
-    def __init__(self, id_, individuals: list[Individual], config: Config):
+    def __init__(self, id_, individuals: list[Individual], config: NEATConfig):
         self.id = id_
         self.individuals = individuals
         self.config = config
@@ -28,6 +28,10 @@ class Species:
         self.avg_fitness = self.fitness_sum / self.get_size()
 
     def calculate_allowed_offspring(self, global_average_fitness: float, max_gen_since_improvement: int) -> None:
+        if global_average_fitness == 0:
+            self.allowed_offspring = 0
+            return
+
         self.allowed_offspring = round(self.avg_fitness / global_average_fitness * self.get_size())
         if self.generations_since_improved > max_gen_since_improvement:
             self.allowed_offspring = 0

@@ -1,18 +1,19 @@
-from typing import Tuple, Union
+from typing import Tuple
 
 import pygame
 
-from rendering.event_handler import EventHandler
+from implementation2.rendering.event_handler import EventHandler
+from implementation2.rendering.ui_object import UIObject
 
 pygame.font.init()
 
 
-class Label:
+class Label(UIObject):
 
     def __init__(self, display: pygame.Surface, position, size, font,
                  text: str = "", font_color=(255, 255, 255), bold: bool = False,
-                 text_orientation: str = "center", fit_size_to_text: bool = True) -> None:
-
+                 text_orientation: str = "center", fit_size_to_text: bool = True, padding: int = 0) -> None:
+        super().__init__(display, position, size, padding)
         self.display = display
         self.x, self.y = position
         self.size = size
@@ -83,7 +84,7 @@ class Label:
                 line += 1
                 continue
             if (
-                self.font.render(self.lines[line], self.bold, self.font_color.c).get_width() > self.size[0]
+                self.font.render(self.lines[line], self.bold, self.font_color).get_width() > self.size[0]
                 and self.lines[line]
             ):
                 self.lines[line] = self.lines[line][:-1]
@@ -103,7 +104,7 @@ class Label:
 
     def get_text(self, text: str = None):
         return self.font.render(
-            text or self.text, self.bold, self.font_color.c
+            text or self.text, self.bold, self.font_color
         )
 
     def get_size(self) -> Tuple[int, int]:

@@ -1,4 +1,4 @@
-from neat.connection import ConnectionGene
+from implementation2.neat.connection import ConnectionGene
 
 
 class ConnectionFactory:

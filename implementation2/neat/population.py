@@ -1,24 +1,27 @@
 import random
-from typing import Optional
+from typing import Optional, Generator, Callable
 
-from neat.config import Config
-from neat.connection_factory import ConnectionFactory
-from neat.genome import Genome
-from neat.genome_factory import GenomeFactory
-from neat.individual import Individual
-from neat.neural_network import NeuralNetwork
-from neat.node_factory import NodeFactory
-from neat.species import Species
+from implementation2.neat.neatconfig import NEATConfig
+from implementation2.neat.connection_factory import ConnectionFactory
+from implementation2.neat.genome import Genome
+from implementation2.neat.genome_factory import GenomeFactory
+from implementation2.neat.individual import Individual
+from implementation2.neat.neural_network import NeuralNetwork
+from implementation2.neat.node_factory import NodeFactory
+from implementation2.neat.species import Species
 
 
 class Population:
 
-    def __init__(self, size: int, num_inputs: int, num_outputs: int, generations: int, config: Config):
+    def __init__(self, size: int, num_inputs: int, num_outputs: int, generations: int, config: NEATConfig,
+                 evaluation_function: Callable[[NeuralNetwork], float], desired_fitness: float = None):
         self.size = size
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
         self.generations = generations
         self.config = config
+        self.evaluation_function = evaluation_function
+        self.desired_fitness = desired_fitness
 
         self.node_factory = NodeFactory(num_inputs + num_outputs)
         self.connection_factory = ConnectionFactory(num_inputs * num_outputs)
@@ -30,17 +33,20 @@ class Population:
 
         self.compatibility_threshold = self.config.compatibility_threshold
 
-    def run(self) -> list[Individual]:
+    def run(self) -> Generator[int, None, None]:
         generation = 0
-        while True:
-            print(f"\n----------------------GENERATION {generation}--------------------------")
+        while generation < self.generations:
             self.speciate_genomes()
             self.evaluate()
-            if generation == self.generations - 1 or self.get_sorted_individuals()[-1].fitness > 3.9:
-                return self.get_sorted_individuals()
-            print("Best: ", self.get_sorted_individuals()[-1])
-            self.crossover_genomes()
-            self.mutate_genomes()
+
+            if self.desired_fitness and self.get_sorted_individuals()[-1].fitness >= self.desired_fitness:
+                return
+
+            yield generation
+
+            if generation < self.generations - 1:
+                self.crossover_genomes()
+                self.mutate_genomes()
 
             generation += 1
 
@@ -99,15 +105,7 @@ class Population:
         for species in self.species:
             for individual in species.individuals:
                 # individual.genome.show_innovation_history()
-                nn = NeuralNetwork(individual.genome)
-
-                out1 = nn.forward([0, 0])[0]
-                out2 = nn.forward([0, 1])[0]
-                out3 = nn.forward([1, 0])[0]
-                out4 = nn.forward([1, 1])[0]
-
-                fitness = 1 - out1 + out2 + out3 + 1 - out4
-                individual.fitness = fitness
+                individual.fitness = self.evaluation_function(NeuralNetwork(individual.genome))
 
     def crossover_genomes(self) -> None:
         self.apply_explicit_fitness_sharing()
@@ -193,7 +191,8 @@ class Population:
                 genomes_num += species.get_size()
                 global_avg_fitness += species.fitness_sum
 
-        global_avg_fitness /= genomes_num
+        if genomes_num:
+            global_avg_fitness /= genomes_num
 
         for species in self.species:
             species.calculate_allowed_offspring(global_avg_fitness, self.config.max_allowed_generations_since_improved)

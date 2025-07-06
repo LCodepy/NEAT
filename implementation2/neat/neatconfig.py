@@ -1,4 +1,4 @@
-class Config:
+class NEATConfig:
 
     def __init__(self, name: str = "config1") -> None:
         self.name = name

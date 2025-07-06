@@ -1,7 +1,7 @@
 from typing import Callable
 
-from neat.connection import ConnectionGene
-from neat.node import NodeGene, NodeType
+from implementation2.neat.connection import ConnectionGene
+from implementation2.neat.node import NodeGene, NodeType
 
 
 class NodeFactory:
